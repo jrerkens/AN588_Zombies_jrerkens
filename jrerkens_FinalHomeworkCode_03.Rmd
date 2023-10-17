@@ -1,0 +1,306 @@
+---
+title: 'Homework 3: Some of my best friends are Zombies'
+author: "Jimmy Erkens"
+date: "`r Sys.Date()`"
+output: 
+  rmdformats::readthedown:
+    toc_float: TRUE
+    number_sections: true
+    code_folding: show
+---
+
+![Horror is queer theory; Deadites from Evil Dead _must_ be zombies right? Mommie's with the maggots now!](https://media.tenor.com/_NcBuTYrTmUAAAAC/mommys-with-the-maggots-with-the-maggots-now.gif)
+
+# Challenges!
+
+## I forgot to include my challenges during my first push, that's a challenge no? I had no difficulties working out the questions if I'm being honest.
+
+## My YAML header as always could be formatted better, not the hugest fan of the `readthedown` format if only because it negates `toc:` 
+
+## I think my comments could be better, and more consistent. But, also everything can always be better.
+
+## I struggled with figuring out how I wanted to assess distributions. I broke out `ks.test()` but I'm certain I could have worked out an iterative algorithm or something from my computational statistics days.
+
+## In general, I think I could have formatted my document to be prettier in numerous ways (e.g., using HTML code) but I don't think that's necessary for this document.
+
+# Questions
+
+## Libraries
+
+```{r, libs, message = F}
+library(tidyverse)
+library(rmdformats)
+library(curl)
+```
+
+## Question 1
+
+First we must load in the data!
+
+```{r, data_init}
+zombies <- read_csv(curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN588_Fall23/zombies.csv")); head(zombies) # gender here is slaying, first time nbs have had any rep in the gender variable in most datasets ever
+```
+
+```{r, popmeans}
+# going variable by variable finding means
+pop_height_mean <- mean(zombies$height); pop_height_mean
+pop_weight_mean <- mean(zombies$weight); pop_weight_mean
+pop_zkills_mean <- mean(zombies$zombies_killed); pop_zkills_mean
+pop_yrsedu_mean <- mean(zombies$years_of_education); pop_yrsedu_mean
+pop_age_mean <- mean(zombies$age); pop_age_mean
+```
+
+```{r, popvariances}
+pop_var <- function(data){ # we're making a population variance function
+  # the math works out here
+  var(data) * ((length(data) - 1)/(length(data)))
+}
+# going variable by variable again
+pop_height_var <- pop_var(zombies$height); pop_height_var
+pop_weight_var <- pop_var(zombies$weight); pop_weight_var
+pop_zkills_var <- pop_var(zombies$zombies_killed); pop_zkills_var
+pop_yrsedu_var <- pop_var(zombies$years_of_education); pop_yrsedu_var
+pop_age_var <- pop_var(zombies$age); pop_age_var
+```
+
+## Question 2
+
+```{r, boxplots}
+# ggplot by each variable
+# gender/sex is more real thank you very much (but also I hate the term)
+
+zombies %>% ggplot(aes(x = height, color = gender)) +
+  geom_boxplot() +
+  ggtitle("Height by gender/sex")
+
+zombies %>% ggplot(aes(x = weight, color = gender)) +
+  geom_boxplot() +
+  ggtitle("Weight by gender/sex")
+
+zombies %>% ggplot(aes(x = zombies_killed, color = gender)) +
+  geom_boxplot() +
+  ggtitle("Zombies killed by gender/sex")
+
+zombies %>% ggplot(aes(x = zombies_killed, color = gender)) +
+  geom_boxplot() +
+  ggtitle("Zombies killed by gender/sex")
+
+zombies %>% ggplot(aes(x = years_of_education, color = gender)) +
+  geom_boxplot() +
+  ggtitle("Years of education by gender/sex")
+
+zombies %>% ggplot(aes(x = age, color = gender)) +
+  geom_boxplot() +
+  ggtitle("Age by gender/sex")
+```
+
+## Question 3
+
+```{r, scatterplots}
+# tried using size and color, looks horrendous i'm ngl
+zombies %>% ggplot(aes(x = age, y = weight, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Age and weight")
+
+zombies %>% ggplot(aes(x = age, y = height, color = gender)) + 
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Age and height")
+
+zombies %>% ggplot(aes(x = weight, y = height, color = gender)) +
+  geom_point() +
+  geom_smooth(method = "lm") +
+  ggtitle("Age and height")
+```
+
+There seems to be a linear relationship between height and age, and a fairly weak relationship between weight and age. The strongest linear relationship is between height and weight.
+
+## Question 4
+
+We're going to look at normality, variable by variable!
+
+### Height
+
+```{r, height}
+# going to be making ugly plots
+hist(zombies$height)
+qqnorm(zombies$height)
+# it looks normal!
+```
+
+### Weight
+
+```{r, weight}
+hist(zombies$weight)
+qqnorm(zombies$weight)
+# it looks approximately normal
+```
+
+### Zombies Killed
+
+```{r}
+hist(zombies$zombies_killed)
+qqnorm(zombies$zombies_killed)
+# this is not normal
+# i think this is poisson
+# i'm breaking out kolmogorov smirnov
+ks.test(zombies$zombies_killed, "ppois", pop_zkills_mean)
+```
+
+This is probably poisson distributed!
+
+### Years of education
+
+```{r}
+hist(zombies$years_of_education)
+qqnorm(zombies$years_of_education)
+# this is not normal
+# i think its poisson
+# i'm breaking out ks again
+ks.test(zombies$years_of_education, "ppois", pop_yrsedu_mean)
+```
+
+This is probably poisson distributed!
+
+### Age
+
+```{r, age}
+hist(zombies$age)
+qqnorm(zombies$age)
+# this looks approximately normal
+```
+
+## Question 5
+
+```{r, sampling}
+set.seed(812) # it's my birthday I'm a narcissist
+zombie_height <- sample(zombies$height, 30, replace = F)
+zombie_weight <- sample(zombies$weight, 30, replace = F)
+zombie_age <- sample(zombies$age, 30, replace = F)
+zombie_years_of_education <- sample(zombies$years_of_education, 30, replace = F)
+zombie_zkills <- sample(zombies$zombies_killed, 30, replace = F)
+```
+
+We're going to construct t intervals for all these samples! I've personally never used a normal assumption except for binomial proportions (because the math just so happens to work out that way).
+
+```{r, height_interval}
+# height, copying and pasting an old code snippet
+LB_height <- mean(zombie_height) - 
+  (qt(0.975, df = length(zombie_height)) * sqrt(var(zombie_height)/length(zombie_height)));LB_height
+UB_height <- mean(zombie_height) + 
+  (qt(0.975, df = length(zombie_height)) * sqrt(var(zombie_height)/length(zombie_height)));UB_height
+```
+
+```{r, weight_interval}
+# weight, copying and pasting 
+LB_weight <- mean(zombie_weight) - 
+  (qt(0.975, df = length(zombie_weight)) * sqrt(var(zombie_weight)/length(zombie_weight)));LB_weight
+UB_weight <- mean(zombie_weight) + 
+  (qt(0.975, df = length(zombie_weight)) * sqrt(var(zombie_weight)/length(zombie_weight)));UB_weight
+```
+
+```{r, zkills_interval}
+# zkills, copying and pasting
+LB_zkills <- mean(zombie_zkills) - 
+  (qt(0.975, df = length(zombie_zkills)) * sqrt(var(zombie_zkills)/length(zombie_zkills)));LB_zkills
+UB_zkills <- mean(zombie_zkills) + 
+  (qt(0.975, df = length(zombie_zkills)) * sqrt(var(zombie_zkills)/length(zombie_zkills)));UB_zkills
+```
+
+
+```{r, age_interval}
+# height, copying and pasting our old 
+LB_age <- mean(zombie_age) - 
+  (qt(0.975, df = length(zombie_age)) * sqrt(var(zombie_age)/length(zombie_age)));LB_age
+UB_age <- mean(zombie_age) + 
+  (qt(0.975, df = length(zombie_age)) * sqrt(var(zombie_age)/length(zombie_age)));UB_age
+```
+
+```{r, education_interval}
+# height, copying and pasting our old 
+LB_years_of_education <- mean(zombie_years_of_education) - 
+  (qt(0.975, df = length(zombie_years_of_education)) * sqrt(var(zombie_years_of_education)/length(zombie_years_of_education)));LB_years_of_education
+UB_years_of_education <- mean(zombie_years_of_education) + 
+  (qt(0.975, df = length(zombie_years_of_education)) * sqrt(var(zombie_years_of_education)/length(zombie_years_of_education)));UB_years_of_education
+```
+
+## Question 6
+
+Create the data...
+
+```{r, forloops4dayz}
+set.seed(812) # it's my birthday!!! again!!!
+# i was gonna do for loops but i couldn't be bothered
+zombie_height <- replicate(100, mean(sample(zombies$height, 30, replace = F)))
+zombie_weight <- replicate(100, mean(sample(zombies$weight, 30, replace = F)))
+zombie_age <- replicate(100, mean(sample(zombies$age, 30, replace = F)))
+zombie_years_of_education <- replicate(100, mean(sample(zombies$years_of_education, 30, replace = F)))
+zombie_zkills <- replicate(100, mean(sample(zombies$zombies_killed, 30, replace = F)))
+```
+
+...Now lets compare confidence intervals!
+
+```{r, height_interval2}
+# height, copying and pasting an old code snippet
+LB_height <- mean(zombie_height) - 
+  (qt(0.975, df = length(zombie_height)) * sqrt(var(zombie_height)/length(zombie_height)));LB_height
+UB_height <- mean(zombie_height) + 
+  (qt(0.975, df = length(zombie_height)) * sqrt(var(zombie_height)/length(zombie_height)));UB_height
+```
+
+```{r, weight_interval2}
+# weight, copying and pasting 
+LB_weight <- mean(zombie_weight) - 
+  (qt(0.975, df = length(zombie_weight)) * sqrt(var(zombie_weight)/length(zombie_weight)));LB_weight
+UB_weight <- mean(zombie_weight) + 
+  (qt(0.975, df = length(zombie_weight)) * sqrt(var(zombie_weight)/length(zombie_weight)));UB_weight
+```
+
+```{r, zkills_interval2}
+# zkills, copying and pasting
+LB_zkills <- mean(zombie_zkills) - 
+  (qt(0.975, df = length(zombie_zkills)) * sqrt(var(zombie_zkills)/length(zombie_zkills)));LB_zkills
+UB_zkills <- mean(zombie_zkills) + 
+  (qt(0.975, df = length(zombie_zkills)) * sqrt(var(zombie_zkills)/length(zombie_zkills)));UB_zkills
+```
+
+
+```{r, age_interval2}
+# age, copying and pasting our old 
+LB_age <- mean(zombie_age) - 
+  (qt(0.975, df = length(zombie_age)) * sqrt(var(zombie_age)/length(zombie_age)));LB_age
+UB_age <- mean(zombie_age) + 
+  (qt(0.975, df = length(zombie_age)) * sqrt(var(zombie_age)/length(zombie_age)));UB_age
+```
+
+```{r, education_interval2}
+# education, copying and pasting our old 
+LB_years_of_education <- mean(zombie_years_of_education) - 
+  (qt(0.975, df = length(zombie_years_of_education)) * sqrt(var(zombie_years_of_education)/length(zombie_years_of_education)));LB_years_of_education
+UB_years_of_education <- mean(zombie_years_of_education) + 
+  (qt(0.975, df = length(zombie_years_of_education)) * sqrt(var(zombie_years_of_education)/length(zombie_years_of_education)));UB_years_of_education
+```
+
+\
+\
+The means are the same, but the spread is much smaller (because it's a sampling distribution!)
+\
+\
+Histograms?
+
+```{r, hists}
+hist(zombie_height)
+hist(zombie_weight)
+hist(zombie_age)
+hist(zombie_zkills)
+hist(zombie_years_of_education)
+
+qqnorm(zombie_height)
+qqnorm(zombie_weight)
+qqnorm(zombie_age)
+qqnorm(zombie_zkills)
+qqnorm(zombie_years_of_education)
+```
+
+The poisson data is looking _more_ normal but to call it normal would definitely be a reach. Imagine replicating 1000 times!
